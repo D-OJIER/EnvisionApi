@@ -1,4 +1,5 @@
 from fastapi import FastAPI, File, UploadFile, Form
+from fastapi.middleware.cors import CORSMiddleware
 from pydub import AudioSegment
 from moviepy.editor import VideoFileClip
 from google.cloud import speech
@@ -8,8 +9,19 @@ import os
 
 app = FastAPI()
 
-# Add the CORS middleware
+# CORS configuration
+origins = [
+    "http://localhost:3000",  # Update this to the frontend origin if needed
+    "https://your-frontend-domain.com",  # Add your frontend domain if hosted
+]
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods (GET, POST, OPTIONS, etc.)
+    allow_headers=["*"],  # Allows all headers
+)
 
 # Load the .env file
 load_dotenv()
@@ -60,11 +72,10 @@ async def upload_video_and_transcribe(
 
     # Generate content based on transcript using Generative AI
     if transcript:
-
         genai.configure(api_key=google_api_key)
         model = genai.GenerativeModel('gemini-pro')
         format = "Ratings': 0-10 -->  then 'Reasons': , don't give '\n' use spaces for that, Keep it short and precise"
-        question = "Rate it out of 10 and check if this is suitable for " + user_prompt + ": " + transcript + "in this" + format
+        question = "Rate it out of 10 and check if this is suitable for " + user_prompt + ": " + transcript + " in this " + format
         response = model.generate_content(question)
         generated_text = response.text
     else:
